@@ -115,7 +115,7 @@ dsh plugin --profile desktop add link:$PWD
 
 Avec `link:`, DSH charge le plugin depuis votre clone : une modification du code s'applique au prochain lancement de DSH.
 
-Basé sur [`@cortexkit/antigravity-auth-core`](https://www.npmjs.com/package/@cortexkit/antigravity-auth-core) (MIT).
+Aucune dépendance : le plugin n'utilise que Node.js, rien de tiers ne peut le casser ou le compromettre.
 
 ## Licence
 

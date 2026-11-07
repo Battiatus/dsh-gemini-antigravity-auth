@@ -148,3 +148,38 @@ test('erreurs d\'appel : quota épuisé avec délai lisible, saturation à rées
   assert.equal(callFailure(503, 'unavailable').retryable, true);
   assert.equal(callFailure(400, 'bad').message, 'Antigravity 400: bad');
 });
+
+test('schémas d\'outils : format Gemini sans $ref ni const, JSON Schema 2020-12 pour Claude', async () => {
+  const { toGeminiParameters, toClaudeParameters } = await import('../lib/schema.js');
+  const tool = {
+    $schema: 'http://json-schema.org/draft-07/schema#', type: 'object', additionalProperties: false,
+    definitions: { Point: { type: 'object', properties: { x: { type: 'number' } } } },
+    properties: {
+      at: { $ref: '#/definitions/Point' },
+      mode: { const: 'fast' },
+      level: { type: 'integer', exclusiveMinimum: 0, enum: [1, 2] },
+      when: { type: 'string', format: 'uri' },
+      pair: { type: 'array', items: [{ type: 'string' }, { type: 'number' }] },
+      both: { allOf: [{ properties: { a: { type: 'string' } }, required: ['a'] }, { properties: { b: { type: 'string' } } }] },
+    },
+    required: ['at', 'ghost'],
+  };
+  const g = toGeminiParameters(tool);
+  assert.equal(g.type, 'OBJECT');
+  assert.deepEqual(g.required, ['at']); // un champ requis inexistant est retiré
+  assert.deepEqual(g.properties.at, { type: 'OBJECT', properties: { x: { type: 'NUMBER' } } });
+  assert.deepEqual(g.properties.mode, { enum: ['fast'], type: 'STRING' });
+  assert.equal(g.properties.level.minimum, 1);
+  assert.match(g.properties.level.description, /One of: 1, 2/); // enum non textuel : en description
+  assert.match(g.properties.when.description, /Format: uri/);
+  assert.deepEqual(g.properties.pair.items, { anyOf: [{ type: 'STRING' }, { type: 'NUMBER' }] });
+  assert.deepEqual(Object.keys(g.properties.both.properties), ['a', 'b']);
+  assert.ok(!JSON.stringify(g).match(/\$ref|\$schema|additionalProperties|definitions|const/));
+  assert.equal(toGeminiParameters({ type: 'object', properties: {} }), undefined); // outil sans paramètre
+  const c = toClaudeParameters(tool);
+  assert.equal(c.$schema, undefined);
+  assert.equal(c.definitions, undefined);
+  assert.deepEqual(c.properties.at, { type: 'object', properties: { x: { type: 'number' } } });
+  assert.deepEqual(c.properties.pair.items, { anyOf: [{ type: 'string' }, { type: 'number' }] }); // plus de tuple
+  assert.equal(c.additionalProperties, false);
+});

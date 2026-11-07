@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SKIP_THOUGHT_SIGNATURE } from '@cortexkit/antigravity-auth-core';
+import { SKIP_THOUGHT_SIGNATURE } from '../lib/google.js';
 import { failureOf, toChunks, toRequest } from '../lib/gemini.js';
 
 const P = { provider: 'agy-mm', model: 'gemini-3.8-flash' };
